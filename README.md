@@ -27,26 +27,11 @@ Generated XML file names defaulted to `sitemap-*.xml`, you can customize prefix 
 	
 We'll add sitemap url's with `addItem` method. In this method, only first parameter (location) is required.
 
-	$sitemap->addItem('/', '1.0', 'daily', 'Today');
-	$sitemap->addItem('/about', '0.8', 'monthly', 'Jun 25');
-	$sitemap->addItem('/contact', '0.6', 'yearly', '14-12-2009');
-	$sitemap->addItem('/otherpage');
+    $sitemap->addItem(new Url('/', '1.0', 'daily', 'Today'));
+    $sitemap->addItem(new Url('/movies', '0.5'));
+    $sitemap->addItem(new Url('/files'));
+    $sitemap->addItem(new Url('http://other.com/files'));//absolute url
 
-w/ method chaining.
-
-	$sitemap->addItem('/projects', '0.8')->addItem('/somepage')->addItem('/hiddenpage', '0.4', 'yearly', '01-01-2011')->addItem('/rss');
-
-from a sql result, or whatever.
-
-	$query = Doctrine_Query::create()
-					->select('p.created_at, p.slug')
-					->from('Posts p')
-					->orderBy('p.id DESC')
-					->useResultCache(true);
-	$posts =  $query->fetchArray(array(), Doctrine_Core::HYDRATE_ARRAY);
-    foreach ($posts as $post) {
-        $sitemap->addItem('/post/' . $post['slug'], '0.6', 'weekly', $post['created_at']);
-    }
 
 If you need to change domain for sitemap instance, you can override it via `setDomain` method.
 
@@ -54,7 +39,7 @@ If you need to change domain for sitemap instance, you can override it via `setD
 	
 Finally we create index for sitemap files. This method also closes tags of latest generated xml file.
 
-	$sitemap->createSitemapIndex('http://example.com/sitemap/', 'Today');
+	$sitemap->createSitemapIndex();
 	
 When you run your script, it generates and saves XML files to given path.
 	
@@ -97,3 +82,5 @@ sitemap-index.xml
 	</sitemapindex>
 	
 You need to submit sitemap-index.xml to Google Sitemaps.
+
+Look for more advanced examples at `exmple` folder.

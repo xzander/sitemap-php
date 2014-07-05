@@ -11,9 +11,6 @@ namespace SitemapPHP;
  * @author     Osman Üngür <osmanungur@gmail.com>
  * @copyright  2009-2011 Osman Üngür
  * @license    http://www.opensource.org/licenses/bsd-license.php BSD License
- * @version    Version @package_version@
- * @since      Class available since Version 1.0.0
- * @link       http://github.com/osmanungur/sitemap-php
  */
 class Sitemap {
 
@@ -25,13 +22,16 @@ class Sitemap {
 	private $domain;
 	private $path;
 	private $filename = 'sitemap';
-	private $current_item = 0;
-	private $current_sitemap = 0;
+	private $location = '/';
+	private $currentItem = 0;
+	private $currentSitemap = 0;
+	private $sitemaps = [];
+
+    private $itemsPerSitemap = 50000;
 
 	const EXT = '.xml';
 	const SCHEMA = 'http://www.sitemaps.org/schemas/sitemap/0.9';
 	const DEFAULT_PRIORITY = 0.5;
-	const ITEM_PER_SITEMAP = 50000;
 	const SEPERATOR = '-';
 	const INDEX_SUFFIX = 'index';
 
@@ -43,14 +43,39 @@ class Sitemap {
 		$this->setDomain($domain);
 	}
 
-	/**
-	 * Sets root path of the website, starting with http:// or https://
-	 *
-	 * @param string $domain
-	 */
+    /**
+     * Sitemap location, path after domain, default /
+     * @param string $location
+     */
+    public function setLocation($location)
+    {
+        $this->location = $location;
+    }
+
+    /**
+     * @return string
+     */
+    public function getLocation()
+    {
+        return $this->location;
+    }
+
+    /**
+     * @param int $itemsPerSitemap
+     */
+    public function setItemsPerSitemap($itemsPerSitemap)
+    {
+        $this->itemsPerSitemap = $itemsPerSitemap;
+    }
+
+    /**
+     * Sets root path of the website, starting with http:// or https://,
+     * but without a trailing slash
+     *
+     * @param string $domain
+     */
 	public function setDomain($domain) {
 		$this->domain = $domain;
-		return $this;
 	}
 
 	/**
@@ -97,7 +122,6 @@ class Sitemap {
 	 */
 	public function setPath($path) {
 		$this->path = $path;
-		return $this;
 	}
 
 	/**
@@ -117,7 +141,6 @@ class Sitemap {
 	 */
 	public function setFilename($filename) {
 		$this->filename = $filename;
-		return $this;
 	}
 
 	/**
@@ -126,7 +149,7 @@ class Sitemap {
 	 * @return int
 	 */
 	private function getCurrentItem() {
-		return $this->current_item;
+		return $this->currentItem;
 	}
 
 	/**
@@ -134,7 +157,7 @@ class Sitemap {
 	 * 
 	 */
 	private function incCurrentItem() {
-		$this->current_item = $this->current_item + 1;
+		$this->currentItem = $this->currentItem + 1;
 	}
 
 	/**
@@ -143,7 +166,7 @@ class Sitemap {
 	 * @return int
 	 */
 	private function getCurrentSitemap() {
-		return $this->current_sitemap;
+		return $this->currentSitemap;
 	}
 
 	/**
@@ -151,37 +174,58 @@ class Sitemap {
 	 * 
 	 */
 	private function incCurrentSitemap() {
-		$this->current_sitemap = $this->current_sitemap + 1;
-	}
+		$this->currentSitemap = $this->currentSitemap + 1;
+    }
+
+    /**
+     * Get list of created sitemaps
+     * @return array
+     */
+    public function getSitemaps()
+    {
+        return $this->sitemaps;
+    }
+
+
+    /**
+     * Get list of created sitemaps
+     * @return array
+     */
+    public function getSitemapsWithAbsolutePath()
+    {
+        $sitemaps = [];
+        foreach ($this->sitemaps as $sitemap) {
+            $sitemaps[] = $this->domain .$this->location . $sitemap;
+        }
+        return $sitemaps;
+    }
 
 	/**
 	 * Prepares sitemap XML document
-	 * 
 	 */
 	private function startSitemap() {
 		$this->setWriter(new \XMLWriter());
 		if ($this->getCurrentSitemap()) {
-			$this->getWriter()->openURI($this->getPath() . $this->getFilename() . self::SEPERATOR . $this->getCurrentSitemap() . self::EXT);
+            $sitemap = $this->getFilename() . self::SEPERATOR . $this->getCurrentSitemap() . self::EXT;
 		} else {
-			$this->getWriter()->openURI($this->getPath() . $this->getFilename() . self::EXT);
-		}
-		$this->getWriter()->startDocument('1.0', 'UTF-8');
+            $sitemap = $this->getFilename() . self::EXT;
+        }
+        $this->sitemaps[] = $sitemap;
+        $this->getWriter()->openURI($this->getPath() . $sitemap);
+        $this->getWriter()->startDocument('1.0', 'UTF-8');
 		$this->getWriter()->setIndent(true);
 		$this->getWriter()->startElement('urlset');
 		$this->getWriter()->writeAttribute('xmlns', self::SCHEMA);
 	}
 
-	/**
-	 * Adds an item to sitemap
-	 *
-	 * @param string $loc URL of the page. This value must be less than 2,048 characters. 
-	 * @param string $priority The priority of this URL relative to other URLs on your site. Valid values range from 0.0 to 1.0.
-	 * @param string $changefreq How frequently the page is likely to change. Valid values are always, hourly, daily, weekly, monthly, yearly and never.
-	 * @param string|int $lastmod The date of last modification of url. Unix timestamp or any English textual datetime description.
-	 * @return Sitemap
-	 */
-	public function addItem($loc, $priority = self::DEFAULT_PRIORITY, $changefreq = NULL, $lastmod = NULL) {
-		if (($this->getCurrentItem() % self::ITEM_PER_SITEMAP) == 0) {
+    /**
+     * Adds an item to sitemap
+     *
+     * @param Url $url
+     * @return Sitemap
+     */
+	public function addItem(Url $url) {
+		if (($this->getCurrentItem() % $this->itemsPerSitemap) == 0) {
 			if ($this->getWriter() instanceof \XMLWriter) {
 				$this->endSitemap();
 			}
@@ -190,64 +234,62 @@ class Sitemap {
 		}
 		$this->incCurrentItem();
 		$this->getWriter()->startElement('url');
-		$this->getWriter()->writeElement('loc', $this->getDomain() . $loc);
-		$this->getWriter()->writeElement('priority', $priority);
-		if ($changefreq)
-			$this->getWriter()->writeElement('changefreq', $changefreq);
-		if ($lastmod)
-			$this->getWriter()->writeElement('lastmod', $this->getLastModifiedDate($lastmod));
+        $this->getWriter()->writeElement('loc',  $this->createAbsoluteUrl($url->getLoc()));
+        if ($url->getPriority()) {
+		    $this->getWriter()->writeElement('priority', $url->getPriority());
+        }
+        if ($url->getChangefreq()) {
+		    $this->getWriter()->writeElement('changefreq', $url->getChangefreq());
+        }
+        if ($url->getLastmod()) {
+		    $this->getWriter()->writeElement('lastmod',
+                Util::getLastModifiedDate($url->getLastmod())
+            );
+        }
 		$this->getWriter()->endElement();
 		return $this;
-	}
-
-	/**
-	 * Prepares given date for sitemap
-	 *
-	 * @param string $date Unix timestamp or any English textual datetime description
-	 * @return string Year-Month-Day formatted date.
-	 */
-	private function getLastModifiedDate($date) {
-		if (ctype_digit($date)) {
-			return date('Y-m-d', $date);
-		} else {
-			$date = strtotime($date);
-			return date('Y-m-d', $date);
-		}
 	}
 
 	/**
 	 * Finalizes tags of sitemap XML document.
 	 *
 	 */
-	private function endSitemap() {
-		if (isset($this->writer)) {
-			$this->getWriter()->endElement();
-			$this->getWriter()->endDocument();
+	public function endSitemap() {
+		if ($this->writer) {
+			$this->writer->endElement();
+			$this->writer->endDocument();
+            $this->writer = null;
 		}
 	}
 
-	/**
+    /**
 	 * Writes Google sitemap index for generated sitemap files
 	 *
 	 * @param string $loc Accessible URL path of sitemaps
 	 * @param string|int $lastmod The date of last modification of sitemap. Unix timestamp or any English textual datetime description.
 	 */
-	public function createSitemapIndex($loc, $lastmod = 'Today') {
+	public function createSitemapIndex($lastmod = 'Today', $path = null) {
 		$this->endSitemap();
-		$indexwriter = new \XMLWriter();
-		$indexwriter->openURI($this->getPath() . $this->getFilename() . self::SEPERATOR . self::INDEX_SUFFIX . self::EXT);
-		$indexwriter->startDocument('1.0', 'UTF-8');
-		$indexwriter->setIndent(true);
-		$indexwriter->startElement('sitemapindex');
-		$indexwriter->writeAttribute('xmlns', self::SCHEMA);
-		for ($index = 0; $index < $this->getCurrentSitemap(); $index++) {
-			$indexwriter->startElement('sitemap');
-			$indexwriter->writeElement('loc', $loc . $this->getFilename() . ($index ? self::SEPERATOR . $index : '') . self::EXT);
-			$indexwriter->writeElement('lastmod', $this->getLastModifiedDate($lastmod));
-			$indexwriter->endElement();
-		}
-		$indexwriter->endElement();
-		$indexwriter->endDocument();
+        if (!$path) {
+            $path = $this->getPath() . $this->getFilename() . self::SEPERATOR . self::INDEX_SUFFIX . self::EXT;
+        }
+        $index = new SitemapIndex($path);
+        foreach ($this->getSitemapsWithAbsolutePath() as $sitemap) {
+            $index->addSitemap($sitemap, $lastmod);
+        }
+        $index->createIndex();
 	}
 
+    /**
+     * @param $location
+     * @return string
+     */
+    private function createAbsoluteUrl($location)
+    {
+        if ($location && $location[0] == '/') {
+            $location = $this->getDomain() . $location;
+            return $location;
+        }
+        return $location;
+    }
 }
