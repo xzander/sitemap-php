@@ -9,7 +9,8 @@
 namespace SitemapPHP;
 
 
-class Url {
+class Url
+{
     private $loc;
     private $priority;
     private $changefreq;

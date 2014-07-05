@@ -5,9 +5,10 @@ namespace SitemapPHP;
 
 use XMLWriter;
 
-class SitemapIndex {
+class SitemapIndex
+{
 
-	const SCHEMA = 'http://www.sitemaps.org/schemas/sitemap/0.9';
+    const SCHEMA = 'http://www.sitemaps.org/schemas/sitemap/0.9';
 
     private $indexFile;
 
@@ -58,16 +59,17 @@ class SitemapIndex {
     }
 
 
-	/**
-	 * Prepares sitemap XML document
-	 */
-	public function createIndex() {
+    /**
+     * Prepares sitemap XML document
+     */
+    public function createIndex()
+    {
         $writer = new \XMLWriter();
-		$writer->openURI($this->indexFile);
-		$writer->startDocument('1.0', 'UTF-8');
-		$writer->setIndent(true);
-		$writer->startElement('sitemapindex');
-		$writer->writeAttribute('xmlns', self::SCHEMA);
+        $writer->openURI($this->indexFile);
+        $writer->startDocument('1.0', 'UTF-8');
+        $writer->setIndent(true);
+        $writer->startElement('sitemapindex');
+        $writer->writeAttribute('xmlns', self::SCHEMA);
 
         foreach ($this->sitemaps as $loc => $sitemap) {
             $writer->startElement('sitemap');
