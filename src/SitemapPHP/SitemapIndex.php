@@ -27,9 +27,9 @@ class SitemapIndex
         /** @var \SimpleXMLElement $xml */
         $xml = simplexml_load_file($this->indexFile);
         foreach ($xml as $sitemap) {
-            $this->sitemaps[(string)$sitemap->loc] = [
+            $this->sitemaps[(string)$sitemap->loc] = array(
                 'lastmod' => (string)$sitemap->lastmod
-            ];
+            );
         }
         return true;
     }
@@ -53,9 +53,9 @@ class SitemapIndex
 
     public function addSitemap($sitemap, $lastMod = 'Today')
     {
-        $this->sitemaps[$sitemap] = [
+        $this->sitemaps[$sitemap] = array(
             'lastmod' => $lastMod
-        ];
+        );
     }
 
     /**
