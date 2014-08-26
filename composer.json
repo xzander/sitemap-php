@@ -1,5 +1,5 @@
 {
-    "name": "xzander/sitemap-php",
+    "name": "evert/sitemap-php",
     "type": "library",
     "description": "Lightweight library for generating Google sitemap XML files",
     "keywords": ["Sitemap"],
