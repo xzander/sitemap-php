@@ -58,6 +58,18 @@ class SitemapIndex
         ];
     }
 
+    /**
+     * Delete sitemaps by regex
+     * @param string $pattern regex for loc
+     */
+    public function deleteSitemapsByPattern($pattern)
+    {
+        foreach (array_keys($this->sitemaps) as $key) {
+            if (preg_match($pattern, $key)) {
+                unset($this->sitemaps[$key]);
+            }
+        }
+    }
 
     /**
      * Prepares sitemap XML document

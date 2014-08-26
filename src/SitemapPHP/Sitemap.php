@@ -267,6 +267,32 @@ class Sitemap
     }
 
     /**
+     * @param array $data <code>
+     *      array(
+     *          array('loc' => '', 'priority' => '', 'changefreq' => '', 'lastmod' => ''),
+     *          ...
+     *      )
+     * </code>
+     */
+    public function addItemsFromArray($data)
+    {
+        foreach ($data as $row) {
+            if (empty($row['loc'])) {
+                continue;
+            }
+
+            $url = new Url(
+                $row['loc'],
+                !empty($row['priority']) ? $row['priority'] : null,
+                !empty($row['changefreq']) ? $row['changefreq'] : null,
+                !empty($row['lastmod']) ? $row['lastmod'] : null
+            );
+
+            $this->addItem($url);
+        }
+    }
+
+    /**
      * Finalizes tags of sitemap XML document.
      *
      */
