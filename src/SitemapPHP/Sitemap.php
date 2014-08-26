@@ -26,7 +26,7 @@ class Sitemap
     private $location = '/';
     private $currentItem = 0;
     private $currentSitemap = 0;
-    private $sitemaps = [];
+    private $sitemaps = array();
 
     private $itemsPerSitemap = 50000;
 
@@ -207,7 +207,7 @@ class Sitemap
      */
     public function getSitemapsWithAbsolutePath()
     {
-        $sitemaps = [];
+        $sitemaps = array();
         foreach ($this->sitemaps as $sitemap) {
             $sitemaps[] = $this->domain . $this->location . $sitemap;
         }

@@ -12,7 +12,7 @@ class SitemapIndex
 
     private $indexFile;
 
-    private $sitemaps = [];
+    private $sitemaps = array();
 
     function __construct($indexFile)
     {
