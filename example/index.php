@@ -13,12 +13,16 @@ $sitemap = new Sitemap('http://example.com');
 $sitemap->setPath('./');//current folder
 $sitemap->setLocation('/movies/');//path after domain
 $sitemap->setFilename('movies');//sitemap name
-$sitemap->setItemsPerSitemap(2);
+$sitemap->setItemsPerSitemap(500);
+$sitemap->setBytesPerSitemap(5000);
 $sitemap->addItem(new Url('/movies/flinstones', '0.5'));
 $sitemap->addItem(new Url('/movies/batman', '0.5'));
 $sitemap->addItem(new Url('/movies/superman', '0.5'));
 $sitemap->addItem(new Url('/movies/spiderman'));
 $sitemap->addItem(new Url('/movies/maksvel'));
+for ($i = 1; $i < 150; $i++) {
+    $sitemap->addItem(new Url('/movies/'.$i));
+}
 
 $sitemap->createSitemapIndex();
 

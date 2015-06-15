@@ -20,6 +20,11 @@ class Sitemap
      * @var \XMLWriter
      */
     private $writer;
+    /**
+     *
+     * @var \XMLWriter
+     */
+    private $memWriter;
     private $domain;
     private $path;
     private $filename = 'sitemap';
@@ -29,6 +34,7 @@ class Sitemap
     private $sitemaps = array();
 
     private $itemsPerSitemap = 50000;
+    private $bytesPerSitemap = 10000000;
 
     const EXT = '.xml';
     const SCHEMA = 'http://www.sitemaps.org/schemas/sitemap/0.9';
@@ -67,7 +73,21 @@ class Sitemap
      */
     public function setItemsPerSitemap($itemsPerSitemap)
     {
+        if ($itemsPerSitemap < 1) {
+            throw new \LogicException('You must set items per sitemap more than 1');
+        }
         $this->itemsPerSitemap = $itemsPerSitemap;
+    }
+
+    /**
+     * @param int $bytesPerSitemap
+     */
+    public function setBytesPerSitemap($bytesPerSitemap)
+    {
+        if ($bytesPerSitemap < 500) {
+            throw new \LogicException('You must set bytes per sitemap more than 500');
+        }
+        $this->bytesPerSitemap = $bytesPerSitemap;
     }
 
     /**
@@ -102,6 +122,16 @@ class Sitemap
     }
 
     /**
+     * Returns XMLWriter object instance
+     *
+     * @return \XMLWriter
+     */
+    private function getMemWriter()
+    {
+        return $this->memWriter;
+    }
+
+    /**
      * Assigns XMLWriter object instance
      *
      * @param \XMLWriter $writer
@@ -109,6 +139,16 @@ class Sitemap
     private function setWriter(\XMLWriter $writer)
     {
         $this->writer = $writer;
+    }
+
+    /**
+     * Assigns XMLWriter object instance
+     *
+     * @param \XMLWriter $writer
+     */
+    private function setMemWriter(\XMLWriter $writer)
+    {
+        $this->memWriter = $writer;
     }
 
     /**
@@ -231,6 +271,27 @@ class Sitemap
         $this->getWriter()->setIndent(true);
         $this->getWriter()->startElement('urlset');
         $this->getWriter()->writeAttribute('xmlns', self::SCHEMA);
+
+        $this->setMemWriter(new \XMLWriter());
+        $this->getMemWriter()->openMemory();
+        $this->getMemWriter()->setIndent(true);
+
+        $this->currentItem = 0;
+
+    }
+
+    private function isNeedToStartNewSitemap()
+    {
+        $need = ($this->getCurrentItem() % $this->itemsPerSitemap) == 0;
+        if (
+            !$need &&
+            $this->getCurrentItem() % floor($this->itemsPerSitemap / 20) == 0 &&
+            $this->getMemWriter() instanceof \XMLWriter &&
+            strlen($this->getMemWriter()->outputMemory(false)) > ($this->bytesPerSitemap * 0.9 - 1000)
+        ) {
+            $need = true;
+        }
+        return $need;
     }
 
     /**
@@ -241,7 +302,7 @@ class Sitemap
      */
     public function addItem(Url $url)
     {
-        if (($this->getCurrentItem() % $this->itemsPerSitemap) == 0) {
+        if ($this->isNeedToStartNewSitemap()) {
             if ($this->getWriter() instanceof \XMLWriter) {
                 $this->endSitemap();
             }
@@ -249,20 +310,20 @@ class Sitemap
             $this->incCurrentSitemap();
         }
         $this->incCurrentItem();
-        $this->getWriter()->startElement('url');
-        $this->getWriter()->writeElement('loc', $this->createAbsoluteUrl($url->getLoc()));
+        $this->getMemWriter()->startElement('url');
+        $this->getMemWriter()->writeElement('loc', $this->createAbsoluteUrl($url->getLoc()));
         if ($url->getPriority()) {
-            $this->getWriter()->writeElement('priority', $url->getPriority());
+            $this->getMemWriter()->writeElement('priority', $url->getPriority());
         }
         if ($url->getChangefreq()) {
-            $this->getWriter()->writeElement('changefreq', $url->getChangefreq());
+            $this->getMemWriter()->writeElement('changefreq', $url->getChangefreq());
         }
         if ($url->getLastmod()) {
-            $this->getWriter()->writeElement('lastmod',
+            $this->getMemWriter()->writeElement('lastmod',
                 Util::getLastModifiedDate($url->getLastmod())
             );
         }
-        $this->getWriter()->endElement();
+        $this->getMemWriter()->endElement();
         return $this;
     }
 
@@ -298,10 +359,15 @@ class Sitemap
      */
     public function endSitemap()
     {
-        if ($this->writer) {
-            $this->writer->endElement();
-            $this->writer->endDocument();
-            $this->writer = null;
+        if ($this->getWriter()) {
+            $this->getMemWriter()->endElement();
+            $batchXmlString = $this->getMemWriter()->outputMemory(true);
+            $this->getWriter()->writeRaw($batchXmlString);
+            $this->getMemWriter()->flush();
+            unset($this->memWriter);
+            $this->getWriter()->endElement();
+            $this->getWriter()->endDocument();
+            unset($this->writer);
         }
     }
 
